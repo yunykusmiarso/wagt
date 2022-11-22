@@ -1,0 +1,29 @@
+{
+  "name": "wagt",
+  "version": "1.0.0",
+  "description": "whatsapp gateway using whatsapp-web.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yunykusmiarso/wagt.git"
+  },
+  "keywords": [
+    "whatsapp",
+    "api",
+    "gateway"
+  ],
+  "author": "yunykusmiarso",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yunykusmiarso/wagt/issues"
+  },
+  "homepage": "https://github.com/yunykusmiarso/wagt#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.18.3"
+  }
+}
