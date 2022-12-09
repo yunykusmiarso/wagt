@@ -19,10 +19,28 @@ To start **wagt** run **node index.js** or double click on **wagt.bat** (windows
 ```
 node index.js
 ```
-
 Scan QR-Code WhatsApp. WhatsApp session saved locally on current working directory (wagt/).
 
 Token Authorization for API access generated on first run. Remove file api-token.json to regenerate Token Authorization.
+
+### Run with pm2
+Make sure pm2 has been installed. And command **node index.js** can run with no error.
+
+Add wagt into pm2 job list:
+```
+pm2 start index.js --name wagt
+```
+
+Run pm2 monit to scan WhatsApp QR Code:
+```
+pm2 monit
+```
+
+Scan WhatsApp QR Code and wait until API Ready then save pm2:
+```
+pm2 save
+```
+
 
 ### Test send message using postman
 
