@@ -17,7 +17,16 @@ const client = new Client({
 });
 
 client.on("qr", (qr) => {
+  console.log("Scan this QR Code:");
   qrcode.generate(qr, { small: true });
+});
+
+client.on("authenticated", () => {
+  console.log("Client Authenticated!");
+});
+client.on("auth_failure", (message) => {
+  console.log("Auth Failure!");
+  console.log(message);
 });
 
 client.on("ready", () => {
