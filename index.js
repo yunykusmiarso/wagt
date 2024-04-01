@@ -12,8 +12,14 @@ const port = 3000;
 const API_TOKEN_PATH = "./api-token.json";
 let apiTokenData;
 
+const wwebVersion = "2.2412.54";
+
 const client = new Client({
   authStrategy: new LocalAuth(),
+  webVersionCache: {
+    type: "remote",
+    remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${wwebVersion}.html`,
+  },
 });
 
 client.on("qr", (qr) => {
