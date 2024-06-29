@@ -12,7 +12,7 @@ const port = 3000;
 const API_TOKEN_PATH = "./api-token.json";
 let apiTokenData;
 
-const wwebVersion = "2.2412.54";
+const wwebVersion = "2.2413.51-beta";
 
 const client = new Client({
   authStrategy: new LocalAuth(),
