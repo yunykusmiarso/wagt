@@ -105,20 +105,14 @@ app.post("/api/send-message", async (req, res) => {
     res.json({ success: true, message: "Message sent" });
 
   } catch (err) {
-    if (!String(err).includes("markedUnread")) {
-      console.error("Send error:", err);
-    }
+    // ✅ ERROR TETAP DITAMPILKAN
+    console.error("Send error:", err);
+
+    // tapi aplikasi tetap jalan
     res.status(500).json({ success: false, message: "Failed to send message" });
   }
 });
 
-// =======================
-// ERROR FILTER (IMPORTANT)
-// =======================
-process.on("unhandledRejection", (reason) => {
-  if (String(reason).includes("markedUnread")) return;
-  console.error("Unhandled Rejection:", reason);
-});
 
 // =======================
 // START
