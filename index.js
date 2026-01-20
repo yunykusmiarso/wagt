@@ -1,6 +1,6 @@
 /**
- * WhatsApp Gateway (Single File)
- * Stable against "markedUnread" error
+ * WhatsApp Gateway - Stable Send
+ * Fokus: PESAN SAMPAI
  */
 
 const qrcode = require("qrcode-terminal");
@@ -16,18 +16,20 @@ const crypto = require("crypto");
 const PORT = 3000;
 const API_TOKEN_PATH = "./api-token.json";
 
+// Paksa versi WA Web STABIL
+const WWEB_VERSION = "2.2413.51";
+
 // =======================
 // EXPRESS
 // =======================
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // =======================
-// API TOKEN
+// TOKEN
 // =======================
 let apiTokenData = null;
-
 function loadOrCreateToken() {
   if (fs.existsSync(API_TOKEN_PATH)) {
     apiTokenData = require(API_TOKEN_PATH);
@@ -42,6 +44,8 @@ function loadOrCreateToken() {
 // =======================
 // WHATSAPP CLIENT
 // =======================
+let waReady = false;
+
 const client = new Client({
   authStrategy: new LocalAuth(),
   markOnlineOnConnect: false,
@@ -53,13 +57,17 @@ const client = new Client({
       "--disable-dev-shm-usage"
     ],
   },
+  webVersionCache: {
+    type: "remote",
+    remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${WWEB_VERSION}.html`,
+  },
 });
 
 // =======================
 // WHATSAPP EVENTS
 // =======================
 client.on("qr", (qr) => {
-  console.log("Scan QR Code below:");
+  console.log("Scan QR Code:");
   qrcode.generate(qr, { small: true });
 });
 
@@ -68,15 +76,16 @@ client.on("authenticated", () => {
 });
 
 client.on("auth_failure", (msg) => {
-  console.error("Authentication failure:", msg);
+  console.error("Auth failure:", msg);
 });
 
 client.on("ready", () => {
-  console.log("WhatsApp client ready");
+  waReady = true;
+  console.log("WhatsApp READY");
   loadOrCreateToken();
 
   app.listen(PORT, () => {
-    console.log(`API running on : http://localhost:${PORT}/api/send-message`);
+    console.log(`API running : http://localhost:${PORT}/api/send-message`);
     console.log(`Authorization token : ${apiTokenData.key}`);
   });
 });
@@ -86,33 +95,63 @@ client.on("ready", () => {
 // =======================
 app.post("/api/send-message", async (req, res) => {
   try {
+    if (!waReady) {
+      return res.json({
+        success: false,
+        message: "WhatsApp client not ready"
+      });
+    }
+
     const auth = req.headers.authorization;
     const { phone, message } = req.body;
 
     if (auth !== apiTokenData.key) {
-      return res.status(401).json({ success: false, message: "Invalid token" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token"
+      });
     }
 
     if (!phone || !message) {
-      return res.json({ success: false, message: "Invalid parameter" });
+      return res.json({
+        success: false,
+        message: "Invalid parameter"
+      });
     }
 
     const number = phone.replace(/\D/g, "") + "@c.us";
 
+    // ===== PENTING: CEK NOMOR =====
+    const isRegistered = await client.isRegisteredUser(number);
+    if (!isRegistered) {
+      return res.json({
+        success: false,
+        message: "Nomor tidak terdaftar WhatsApp"
+      });
+    }
+
+    // ===== DELAY AMAN (WAJIB) =====
+    await new Promise(r => setTimeout(r, 800));
+
+    // ===== SEND MESSAGE =====
     await client.sendMessage(number, message);
 
     console.log(`Message sent to ${number}`);
-    res.json({ success: true, message: "Message sent" });
+    res.json({
+      success: true,
+      message: "Message sent"
+    });
 
   } catch (err) {
-    // ✅ ERROR TETAP DITAMPILKAN
+    // ERROR DITAMPILKAN (SESUSAI PERMINTAAN)
     console.error("Send error:", err);
 
-    // tapi aplikasi tetap jalan
-    res.status(500).json({ success: false, message: "Failed to send message" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to send message"
+    });
   }
 });
-
 
 // =======================
 // START
