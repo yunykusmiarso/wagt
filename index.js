@@ -1,3 +1,8 @@
+/**
+ * WhatsApp Gateway (Single File)
+ * Stable against "markedUnread" error
+ */
+
 const qrcode = require("qrcode-terminal");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const express = require("express");
@@ -5,80 +10,117 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const crypto = require("crypto");
 
+// =======================
+// CONFIG
+// =======================
+const PORT = 3000;
+const API_TOKEN_PATH = "./api-token.json";
+
+// =======================
+// EXPRESS
+// =======================
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-const port = 3000;
-const API_TOKEN_PATH = "./api-token.json";
-let apiTokenData;
+// =======================
+// API TOKEN
+// =======================
+let apiTokenData = null;
 
-// const wwebVersion = "2.2413.51-beta";
+function loadOrCreateToken() {
+  if (fs.existsSync(API_TOKEN_PATH)) {
+    apiTokenData = require(API_TOKEN_PATH);
+    console.log("API token loaded");
+  } else {
+    apiTokenData = { key: crypto.randomBytes(28).toString("hex") };
+    fs.writeFileSync(API_TOKEN_PATH, JSON.stringify(apiTokenData, null, 2));
+    console.log("API token created");
+  }
+}
 
+// =======================
+// WHATSAPP CLIENT
+// =======================
 const client = new Client({
-  puppeteer: {
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  },
   authStrategy: new LocalAuth(),
-  // webVersionCache: {
-  //   type: "remote",
-  //   remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${wwebVersion}.html`,
-  // },
+  markOnlineOnConnect: false,
+  puppeteer: {
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage"
+    ],
+  },
 });
 
+// =======================
+// WHATSAPP EVENTS
+// =======================
 client.on("qr", (qr) => {
-  console.log("Scan this QR Code:");
+  console.log("Scan QR Code below:");
   qrcode.generate(qr, { small: true });
 });
 
 client.on("authenticated", () => {
-  console.log("Client Authenticated!");
+  console.log("WhatsApp authenticated");
 });
-client.on("auth_failure", (message) => {
-  console.log("Auth Failure!");
-  console.log(message);
+
+client.on("auth_failure", (msg) => {
+  console.error("Authentication failure:", msg);
 });
 
 client.on("ready", () => {
-  console.log("WhatsApp Client is ready!");
-  if (fs.existsSync(API_TOKEN_PATH)) {
-    apiTokenData = require(API_TOKEN_PATH);
-    console.log(`loading old API token...`);
-  } else {
-    apiTokenData = { key: crypto.randomBytes(28).toString("hex") };
-    fs.writeFile(API_TOKEN_PATH, JSON.stringify(apiTokenData), (err) => {
-      if (err) {
-        console.error(err);
-      }
-    });
-  }
-  app.listen(port, () => {
-    console.log(`API listening on port ${port}`);
-    console.log(`API address: http://localhost:${port}/api/send-message`);
-    console.log(`Authorization: ${apiTokenData.key}`);
-    console.log(`Post form: phone, message`);
-    console.log(`API ready.`);
+  console.log("WhatsApp client ready");
+  loadOrCreateToken();
+
+  app.listen(PORT, () => {
+    console.log(`API running on : http://localhost:${PORT}/api/send-message`);
+    console.log(`Authorization token : ${apiTokenData.key}`);
   });
 });
 
-app.post("/api/send-message", (req, res) => {
-  let key = req.headers.authorization;
-  let phone_no = req.body.phone;
-  let message = req.body.message;
-  if (key == apiTokenData.key) {
-    if (phone_no && message) {
-      const text = message;
-      const number = phone_no + "@c.us";
-      client.sendMessage(number, text);
-      console.log("Message sent");
-      res.send({ success: true, message: "Message sent", data: {} });
-    } else {
-      console.log("Invalid parameter");
-      res.send({ success: false, message: "Invalid parameter", data: {} });
+// =======================
+// API ENDPOINT
+// =======================
+app.post("/api/send-message", async (req, res) => {
+  try {
+    const auth = req.headers.authorization;
+    const { phone, message } = req.body;
+
+    if (auth !== apiTokenData.key) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
     }
-  } else {
-    console.log("Invalid api access");
-    res.send({ success: false, message: "Invalid token", data: {} });
+
+    if (!phone || !message) {
+      return res.json({ success: false, message: "Invalid parameter" });
+    }
+
+    const number = phone.replace(/\D/g, "") + "@c.us";
+
+    await client.sendMessage(number, message);
+
+    console.log(`Message sent to ${number}`);
+    res.json({ success: true, message: "Message sent" });
+
+  } catch (err) {
+    if (!String(err).includes("markedUnread")) {
+      console.error("Send error:", err);
+    }
+    res.status(500).json({ success: false, message: "Failed to send message" });
   }
 });
 
+// =======================
+// ERROR FILTER (IMPORTANT)
+// =======================
+process.on("unhandledRejection", (reason) => {
+  if (String(reason).includes("markedUnread")) return;
+  console.error("Unhandled Rejection:", reason);
+});
+
+// =======================
+// START
+// =======================
 client.initialize();
