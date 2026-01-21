@@ -57,11 +57,33 @@ const client = new Client({
       "--disable-dev-shm-usage"
     ],
   },
-  webVersionCache: {
-    type: "remote",
-    remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${WWEB_VERSION}.html`,
-  },
 });
+
+// Helper: try to find local Chrome on common Windows path or use env CHROME_PATH
+function findChromeExecutable() {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  const possible = [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files\\Chromium\\Application\\chrome.exe",
+  ];
+  for (const p of possible) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+// If a local Chrome is available, set executablePath so puppeteer uses it
+const chromePath = findChromeExecutable();
+if (chromePath) {
+  client.options.puppeteer.executablePath = chromePath;
+}
+
+if (chromePath) {
+  console.log("Using Chrome executable:", chromePath);
+} else {
+  console.log("No local Chrome found. If you see DNS errors, consider installing puppeteer or set CHROME_PATH environment variable.");
+}
 
 // =======================
 // WHATSAPP EVENTS
@@ -134,9 +156,11 @@ app.post("/api/send-message", async (req, res) => {
     await new Promise(r => setTimeout(r, 800));
 
     // ===== SEND MESSAGE =====
-    await client.sendMessage(number, message);
+    // Disable sendSeen to avoid compatibility issues with some WhatsApp Web versions
+    const sent = await client.sendMessage(number, message, { sendSeen: false });
 
-    console.log(`Message sent to ${number}`);
+    if (sent) console.log(`Message sent to ${number}`);
+    else console.log(`Message may not have been sent to ${number}`);
     res.json({
       success: true,
       message: "Message sent"
@@ -156,4 +180,14 @@ app.post("/api/send-message", async (req, res) => {
 // =======================
 // START
 // =======================
+
+// Global error handlers to surface useful diagnostics
+process.on('unhandledRejection', (reason, p) => {
+  console.error('Unhandled Rejection at:', p, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
 client.initialize();
