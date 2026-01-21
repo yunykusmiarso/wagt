@@ -23,6 +23,28 @@ Scan QR-Code WhatsApp. WhatsApp session saved locally on current working directo
 
 Token Authorization for API access generated on first run. Remove file api-token.json to regenerate Token Authorization.
 
+### Troubleshooting
+
+**Error: `ERR_NAME_NOT_RESOLVED at https://web.whatsapp.com/`**
+
+This error means Chrome/Chromium is not found or cannot access WhatsApp Web. Solutions:
+
+**Linux Server:**
+```bash
+# Install Chromium
+sudo apt install chromium-browser -y
+
+# Or set Chrome path manually
+export CHROME_PATH=/usr/bin/chromium-browser
+node index.js
+```
+
+**Windows:**
+- Pastikan Google Chrome sudah terinstall
+- Atau set environment variable: `set CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe`
+
+📖 **Panduan lengkap instalasi Linux:** Lihat [INSTALL_LINUX.md](INSTALL_LINUX.md)
+
 ### Run with pm2
 Make sure pm2 has been installed. And command **node index.js** can run with no error.
 

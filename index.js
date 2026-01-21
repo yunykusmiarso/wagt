@@ -54,35 +54,43 @@ const client = new Client({
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage"
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-web-security",
+      "--disable-features=IsolateOrigins,site-per-process"
     ],
   },
 });
 
-// Helper: try to find local Chrome on common Windows path or use env CHROME_PATH
+// Helper: try to find Chrome executable (works on both Windows and Linux)
 function findChromeExecutable() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
-  const possible = [
+  
+  const possible = process.platform === 'win32' ? [
     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
     "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files\\Chromium\\Application\\chrome.exe",
+  ] : [
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/snap/bin/chromium",
   ];
+  
   for (const p of possible) {
     if (fs.existsSync(p)) return p;
   }
   return null;
 }
 
-// If a local Chrome is available, set executablePath so puppeteer uses it
+// Set Chrome executable if available
 const chromePath = findChromeExecutable();
 if (chromePath) {
   client.options.puppeteer.executablePath = chromePath;
-}
-
-if (chromePath) {
-  console.log("Using Chrome executable:", chromePath);
+  console.log("Using Chrome:", chromePath);
 } else {
-  console.log("No local Chrome found. If you see DNS errors, consider installing puppeteer or set CHROME_PATH environment variable.");
+  console.log("⚠️  Chrome not found. Install Chrome/Chromium or set CHROME_PATH");
+  console.log("For Linux: sudo apt install chromium-browser");
+  console.log("Or set: export CHROME_PATH=/path/to/chrome");
 }
 
 // =======================
