@@ -137,11 +137,14 @@ Jika muncul error `cannot set memlock limit to 524288:524288: Operation not perm
 # Beri permission untuk script
 chmod +x start-pm2.sh
 
-# Jalankan script
+# Jalankan script (kode sudah dioptimasi untuk non-root user)
 ./start-pm2.sh
 
 # Lihat logs
 pm2 logs wagt
+
+# Jika masih error, coba restart sekali lagi
+pm2 restart wagt
 ```
 
 **Cara 2: Gunakan ecosystem config**

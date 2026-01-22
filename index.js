@@ -73,7 +73,9 @@ const client = new Client({
       "--ignore-certificate-errors",
       "--ignore-ssl-errors",
       "--ignore-certificate-errors-spki-list",
-      "--disable-software-rasterizer"
+      "--disable-software-rasterizer",
+      "--no-zygote",
+      "--single-process"
     ],
   },
 });

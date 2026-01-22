@@ -2,14 +2,10 @@
 # Startup script untuk WAGT dengan PM2
 # Script ini mengatur ulimit sebelum start PM2
 
-# Set ulimit untuk mengatasi memlock error
-ulimit -l unlimited
+# Try to set ulimit (ignore if fails - kode sudah dioptimasi untuk handle limit)
+ulimit -l unlimited 2>/dev/null || echo "ℹ️  Running with system ulimit (memlock: $(ulimit -l) bytes)"
 
-# Set shared memory size
-ulimit -v unlimited
-
-echo "✅ ulimit configured:"
-echo "   Max locked memory: $(ulimit -l)"
+echo "✅ Starting WAGT..."
 echo ""
 
 # Stop dan delete process lama jika ada
