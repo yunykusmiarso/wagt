@@ -23,40 +23,6 @@ Scan QR-Code WhatsApp. WhatsApp session saved locally on current working directo
 
 Token Authorization for API access generated on first run. Remove file api-token.json to regenerate Token Authorization.
 
-### Troubleshooting
-
-**Error: `ERR_NAME_NOT_RESOLVED at https://web.whatsapp.com/`**
-
-This error means DNS cannot resolve WhatsApp domain. **Quick fix for Linux:**
-
-```bash
-# Run automatic DNS fix script
-sudo chmod +x fix-dns.sh
-sudo ./fix-dns.sh
-
-# Then start the app
-node index.js
-```
-
-**Manual fix:**
-```bash
-# Set Google DNS
-sudo bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
-sudo bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
-
-# Test connectivity
-ping -c 3 web.whatsapp.com
-
-# Run app
-node index.js
-```
-
-**Windows:**
-- Pastikan Google Chrome sudah terinstall
-- Atau set environment variable: `set CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe`
-
-📖 **Panduan lengkap instalasi Linux:** Lihat [INSTALL_LINUX.md](INSTALL_LINUX.md)
-
 ### Run with pm2
 Make sure pm2 has been installed. And command **node index.js** can run with no error.
 
