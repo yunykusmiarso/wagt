@@ -127,23 +127,49 @@ sudo iptables -L -n
 env | grep -i proxy
 ```
 
-### Solusi 5: Fix Permission Error (memlock limit)
+### Solusi 5: Fix Permission Error (memlock limit) ⚠️ PENTING
 
 Jika muncul error `cannot set memlock limit to 524288:524288: Operation not permitted`:
 
-**Cara 1: Run PM2 dengan ulimit**
+**Cara 1: Gunakan script startup (PALING MUDAH & RECOMMENDED)**
+
+```bash
+# Beri permission untuk script
+chmod +x start-pm2.sh
+
+# Jalankan script
+./start-pm2.sh
+
+# Lihat logs
+pm2 logs wagt
+```
+
+**Cara 2: Gunakan ecosystem config**
+
+```bash
+# Stop process lama
+pm2 stop wagt
+pm2 delete wagt
+
+# Start dengan ecosystem config
+bash -c "ulimit -l unlimited && pm2 start ecosystem.config.js"
+
+# Save konfigurasi
+pm2 save
+```
+
+**Cara 3: Run PM2 dengan ulimit manual**
 
 ```bash
 # Stop aplikasi yang sedang jalan
 pm2 stop wagt
 pm2 delete wagt
 
-# Start dengan ulimit yang lebih tinggi
-pm2 start index.js --name wagt -- --max-old-space-size=512
+# PENTING: Jalankan ulimit DI SESI YANG SAMA sebelum PM2
+bash -c "ulimit -l unlimited && pm2 start index.js --name wagt"
 
-# Atau jika masih error, set ulimit sebelum start
-ulimit -l unlimited
-pm2 start index.js --name wagt
+# Cek logs
+pm2 logs wagt
 ```
 
 **Cara 2: Edit systemd service (untuk pm2 startup)**
