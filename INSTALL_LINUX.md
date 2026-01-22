@@ -38,7 +38,63 @@ export CHROME_PATH=/usr/bin/chromium-browser
 node .
 ```
 
-### Solusi 3: Cek Koneksi Internet & DNS
+### Solusi 3: Fix DNS Resolution (PALING SERING BERHASIL)
+
+Error `ERR_NAME_NOT_RESOLVED` biasanya disebabkan DNS server yang tidak bisa resolve domain WhatsApp.
+
+**Fix cepat:**
+
+```bash
+# Backup DNS lama
+sudo cp /etc/resolv.conf /etc/resolv.conf.backup
+
+# Gunakan Google DNS
+sudo bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
+sudo bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
+
+# Test DNS
+ping -c 3 web.whatsapp.com
+
+# Jika berhasil, jalankan aplikasi
+node .
+```
+
+**Atau gunakan Cloudflare DNS:**
+
+```bash
+sudo bash -c "echo 'nameserver 1.1.1.1' > /etc/resolv.conf"
+sudo bash -c "echo 'nameserver 1.0.0.1' >> /etc/resolv.conf"
+```
+
+**Untuk Ubuntu 18.04+ dengan systemd-resolved:**
+
+```bash
+# Edit konfigurasi DNS
+sudo nano /etc/systemd/resolved.conf
+
+# Tambahkan/ubah baris berikut:
+[Resolve]
+DNS=8.8.8.8 8.8.4.4
+FallbackDNS=1.1.1.1 1.0.0.1
+
+# Restart service
+sudo systemctl restart systemd-resolved
+
+# Verifikasi
+resolvectl status
+```
+
+**Tambahkan entry manual (jika DNS tetap gagal):**
+
+```bash
+# Cari IP WhatsApp Web
+nslookup web.whatsapp.com 8.8.8.8
+
+# Tambahkan ke /etc/hosts
+sudo bash -c "echo '157.240.22.51 web.whatsapp.com' >> /etc/hosts"
+```
+
+### Solusi 4: Cek Koneksi Internet & DNS
 
 Jika masih error setelah install Chromium:
 
@@ -53,7 +109,76 @@ nameserver 8.8.8.8
 nameserver 8.8.4.4
 ```
 
-### Solusi 4: Run dengan PM2 (Production)
+### Solusi 4: Cek Koneksi Internet & Firewall
+
+Jika masih error setelah fix DNS:
+
+```bash
+# Test koneksi HTTPS ke WhatsApp
+curl -I https://web.whatsapp.com
+
+# Test dengan wget
+wget --spider https://web.whatsapp.com
+
+# Cek apakah ada firewall yang block
+sudo iptables -L -n
+
+# Cek proxy settings
+env | grep -i proxy
+```
+
+### Solusi 5: Fix Permission Error (memlock limit)
+
+Jika muncul error `cannot set memlock limit to 524288:524288: Operation not permitted`:
+
+**Cara 1: Run PM2 dengan ulimit**
+
+```bash
+# Stop aplikasi yang sedang jalan
+pm2 stop wagt
+pm2 delete wagt
+
+# Start dengan ulimit yang lebih tinggi
+pm2 start index.js --name wagt -- --max-old-space-size=512
+
+# Atau jika masih error, set ulimit sebelum start
+ulimit -l unlimited
+pm2 start index.js --name wagt
+```
+
+**Cara 2: Edit systemd service (untuk pm2 startup)**
+
+```bash
+# Jika sudah setup pm2 startup
+sudo nano /etc/systemd/system/pm2-dukcapil.service
+
+# Tambahkan di section [Service]:
+LimitMEMLOCK=infinity
+
+# Reload dan restart
+sudo systemctl daemon-reload
+sudo systemctl restart pm2-dukcapil
+```
+
+**Cara 3: Set capabilities untuk Chromium (recommended)**
+
+```bash
+# Set cap_ipc_lock capability
+sudo setcap cap_ipc_lock=+ep /usr/bin/chromium-browser
+
+# Atau jika menggunakan snap
+sudo setcap cap_ipc_lock=+ep /snap/bin/chromium
+```
+
+**Cara 4: Run tanpa PM2 (testing)**
+
+```bash
+# Test tanpa PM2 untuk memastikan app bisa jalan
+ulimit -l unlimited
+node index.js
+```
+
+### Solusi 6: Run dengan PM2 (Production)
 
 ```bash
 # Install PM2

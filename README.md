@@ -27,15 +27,27 @@ Token Authorization for API access generated on first run. Remove file api-token
 
 **Error: `ERR_NAME_NOT_RESOLVED at https://web.whatsapp.com/`**
 
-This error means Chrome/Chromium is not found or cannot access WhatsApp Web. Solutions:
+This error means DNS cannot resolve WhatsApp domain. **Quick fix for Linux:**
 
-**Linux Server:**
 ```bash
-# Install Chromium
-sudo apt install chromium-browser -y
+# Run automatic DNS fix script
+sudo chmod +x fix-dns.sh
+sudo ./fix-dns.sh
 
-# Or set Chrome path manually
-export CHROME_PATH=/usr/bin/chromium-browser
+# Then start the app
+node index.js
+```
+
+**Manual fix:**
+```bash
+# Set Google DNS
+sudo bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
+sudo bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
+
+# Test connectivity
+ping -c 3 web.whatsapp.com
+
+# Run app
 node index.js
 ```
 

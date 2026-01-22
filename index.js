@@ -57,7 +57,23 @@ const client = new Client({
       "--disable-dev-shm-usage",
       "--disable-gpu",
       "--disable-web-security",
-      "--disable-features=IsolateOrigins,site-per-process"
+      "--disable-features=IsolateOrigins,site-per-process",
+      "--disable-blink-features=AutomationControlled",
+      "--disable-features=VizDisplayCompositor",
+      "--proxy-server='direct://'",
+      "--proxy-bypass-list=*",
+      "--disable-background-networking",
+      "--disable-default-apps",
+      "--disable-extensions",
+      "--disable-sync",
+      "--metrics-recording-only",
+      "--mute-audio",
+      "--no-first-run",
+      "--safebrowsing-disable-auto-update",
+      "--ignore-certificate-errors",
+      "--ignore-ssl-errors",
+      "--ignore-certificate-errors-spki-list",
+      "--disable-software-rasterizer"
     ],
   },
 });
@@ -192,10 +208,43 @@ app.post("/api/send-message", async (req, res) => {
 // Global error handlers to surface useful diagnostics
 process.on('unhandledRejection', (reason, p) => {
   console.error('Unhandled Rejection at:', p, 'reason:', reason);
+  console.error('\n⚠️  Troubleshooting:');
+  console.error('1. Check internet: ping web.whatsapp.com');
+  console.error('2. Check DNS: cat /etc/resolv.conf');
+  console.error('3. Try: sudo systemctl restart systemd-resolved');
+  console.error('4. Or add to /etc/hosts: 157.240.22.51 web.whatsapp.com\n');
 });
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
 
-client.initialize();
+// Test DNS resolution before starting
+const dns = require('dns');
+console.log('Testing DNS resolution for web.whatsapp.com...');
+dns.lookup('web.whatsapp.com', (err, address) => {
+  if (err) {
+    console.error('❌ DNS lookup failed:', err.code);
+    console.error('\n🔧 Quick fix:');
+    
+    if (process.platform === 'win32') {
+      console.error('Windows: Check your internet connection and DNS settings');
+      console.error('1. Open Network Settings > Change adapter settings');
+      console.error('2. Right-click your connection > Properties');
+      console.error('3. Select IPv4 > Properties > Use these DNS:');
+      console.error('   Primary: 8.8.8.8');
+      console.error('   Secondary: 8.8.4.4');
+      console.error('4. Or run in CMD as Admin:');
+      console.error('   netsh interface ip set dns "Ethernet" static 8.8.8.8\n');
+    } else {
+      console.error('sudo bash -c "echo \'nameserver 8.8.8.8\' > /etc/resolv.conf"');
+      console.error('sudo bash -c "echo \'nameserver 8.8.4.4\' >> /etc/resolv.conf"\n');
+    }
+    
+    process.exit(1);
+  }
+  console.log('✅ DNS OK - web.whatsapp.com resolves to', address);
+  
+  // Start WhatsApp client after DNS check passes
+  client.initialize();
+});
