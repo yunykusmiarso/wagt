@@ -37,6 +37,14 @@ client.on("auth_failure", (message) => {
   console.log("Auth Failure!");
   console.log(message);
 });
+client.on("loading_screen", (percent, message) => {
+  console.log(`Loading ${percent}% - ${message}`);
+});
+
+client.on("change_state", (state) => {
+  console.log("State changed:", state);
+});
+
 
 client.on("ready", () => {
   console.log("WhatsApp Client is ready!");
